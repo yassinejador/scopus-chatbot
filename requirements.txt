@@ -9,7 +9,6 @@ sentence-transformers
 huggingface_hub
 faiss-cpu
 plotly
-streamlit
 gradio
 python-dotenv
 beautifulsoup4

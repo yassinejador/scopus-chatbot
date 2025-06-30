@@ -1,11 +1,1049 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>Scopus Research Assistant</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #ffffff;
+            --bg-secondary: #f7f7f8;
+            --text-primary: #2d3748;
+            --text-secondary: #8e8ea0;
+            --border: #e5e5e7;
+            --hover: #f1f1f3;
+            --accent: #19c37d;
+            --accent-hover: #16a069;
+            --shadow: rgba(0, 0, 0, 0.1);
+            --input-bg: #ffffff;
+            --message-user: #f4f4f4;
+            --message-bot: #ffffff;
+            --sidebar-width: 260px;
+        }
+
+        [data-theme="dark"] {
+            --bg-primary: #212121;
+            --bg-secondary: #2f2f2f;
+            --text-primary: #ececec;
+            --text-secondary: #c5c5d2;
+            --border: #4d4d4f;
+            --hover: #40414f;
+            --input-bg: #40414f;
+            --message-user: #444654;
+            --message-bot: #343541;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            transition: background-color 0.2s ease, color 0.2s ease;
+            min-height: 100vh;
+            display: flex;
+        }
+
+        .sidebar {
+            width: var(--sidebar-width);
+            background: var(--bg-secondary);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.3s ease;
+            position: fixed;
+            left: 0;
+            top: 0;
+            height: 100vh;
+            z-index: 200;
+        }
+
+        .sidebar.hidden {
+            transform: translateX(-100%);
+        }
+
+        .sidebar-header {
+            padding: 16px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .sidebar-title {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .sidebar-close {
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 4px;
+            font-size: 18px;
+            transition: all 0.2s ease;
+        }
+
+        .sidebar-close:hover {
+            background: var(--hover);
+            color: var(--text-primary);
+        }
+
+        .sidebar-content {
+            flex: 1;
+            padding: 16px;
+            overflow-y: auto;
+        }
+
+        .sidebar-section {
+            margin-bottom: 24px;
+        }
+
+        .sidebar-section-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .sidebar-item {
+            padding: 8px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 4px;
+            color: var(--text-primary);
+        }
+
+        .sidebar-item:hover {
+            background: var(--hover);
+        }
+
+        .sidebar-item.active {
+            background: var(--accent);
+            color: white;
+        }
+
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            transition: margin-left 0.3s ease;
+            margin-left: var(--sidebar-width);
+        }
+
+        .main-content.sidebar-hidden {
+            margin-left: 0;
+        }
+
+        .header {
+            background: var(--bg-primary);
+            border-bottom: 1px solid var(--border);
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            backdrop-filter: blur(10px);
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .sidebar-toggle {
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+            font-size: 18px;
+        }
+
+        .sidebar-toggle:hover {
+            background: var(--hover);
+            color: var(--text-primary);
+        }
+
+        .logo {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .header-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: 8px 12px;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .header-btn:hover {
+            background: var(--hover);
+            color: var(--text-primary);
+        }
+
+        .theme-toggle {
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+            font-size: 16px;
+        }
+
+        .theme-toggle:hover {
+            background: var(--hover);
+            color: var(--text-primary);
+        }
+
+        .upgrade-btn {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .upgrade-btn:hover {
+            background: var(--accent-hover);
+        }
+
+        .chat-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            max-width: 768px;
+            margin: 0 auto;
+            width: 100%;
+            padding: 0 16px;
+        }
+
+        .chat-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+        }
+
+        .messages-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px 0;
+        }
+
+        .message-group {
+            margin-bottom: 24px;
+        }
+
+        .message {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+
+        .message-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: 600;
+            flex-shrink: 0;
+            margin-top: 4px;
+        }
+
+        .message.user .message-avatar {
+            background: var(--accent);
+            color: white;
+        }
+
+        .message.assistant .message-avatar {
+            background: var(--accent);
+            color: white;
+        }
+
+        .message-content {
+            flex: 1;
+            line-height: 1.6;
+            color: var(--text-primary);
+        }
+
+        .message-content p {
+            margin: 0 0 12px 0;
+        }
+
+        .message-content p:last-child {
+            margin-bottom: 0;
+        }
+
+        .message-content h1,
+        .message-content h2,
+        .message-content h3 {
+            margin: 16px 0 8px 0;
+            font-weight: 600;
+        }
+
+        .message-content ul,
+        .message-content ol {
+            margin: 12px 0;
+            padding-left: 20px;
+        }
+
+        .message-content li {
+            margin: 4px 0;
+        }
+
+        .message-content code {
+            background: var(--bg-secondary);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
+            font-size: 14px;
+        }
+
+        .welcome-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 40px 20px;
+            min-height: 60vh;
+        }
+
+        .welcome-title {
+            font-size: 32px;
+            font-weight: 400;
+            color: var(--text-primary);
+            margin-bottom: 32px;
+        }
+
+        .welcome-subtitle {
+            font-size: 16px;
+            color: var(--text-secondary);
+            margin-bottom: 40px;
+            max-width: 600px;
+            line-height: 1.5;
+        }
+
+        .suggestions-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 12px;
+            margin-bottom: 40px;
+            width: 100%;
+            max-width: 600px;
+        }
+
+        .suggestion-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: left;
+        }
+
+        .suggestion-card:hover {
+            background: var(--hover);
+            border-color: var(--text-secondary);
+        }
+
+        .suggestion-title {
+            font-weight: 500;
+            margin-bottom: 4px;
+            color: var(--text-primary);
+        }
+
+        .suggestion-desc {
+            font-size: 14px;
+            color: var(--text-secondary);
+            line-height: 1.4;
+        }
+
+        .input-container {
+            padding: 20px 0;
+            position: sticky;
+            bottom: 0;
+            background: var(--bg-primary);
+        }
+
+        .input-wrapper {
+            position: relative;
+            max-width: 100%;
+        }
+
+        .input-row {
+            display: flex;
+            align-items: flex-end;
+            gap: 8px;
+            background: var(--input-bg);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 12px;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 8px var(--shadow);
+        }
+
+        .input-row:focus-within {
+            border-color: var(--accent);
+            box-shadow: 0 2px 12px rgba(25, 195, 125, 0.15);
+        }
+
+        .tools-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: 6px 12px;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .tools-btn:hover {
+            background: var(--hover);
+            color: var(--text-primary);
+        }
+
+        .message-input {
+            flex: 1;
+            border: none;
+            outline: none;
+            background: transparent;
+            color: var(--text-primary);
+            font-size: 16px;
+            line-height: 1.5;
+            resize: none;
+            min-height: 24px;
+            max-height: 120px;
+            padding: 0;
+        }
+
+        .message-input::placeholder {
+            color: var(--text-secondary);
+        }
+
+        .send-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+            font-size: 16px;
+        }
+
+        .send-btn:hover {
+            background: var(--hover);
+            color: var(--text-primary);
+        }
+
+        .send-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .typing-indicator {
+            display: none;
+            margin-bottom: 24px;
+        }
+
+        .typing-content {
+            display: flex;
+            gap: 16px;
+        }
+
+        .typing-dots {
+            display: flex;
+            gap: 4px;
+            margin-top: 8px;
+        }
+
+        .typing-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--text-secondary);
+            animation: typing 1.4s infinite ease-in-out;
+        }
+
+        .typing-dot:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-dot:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes typing {
+
+            0%,
+            60%,
+            100% {
+                opacity: 0.3;
+                transform: translateY(0);
+            }
+
+            30% {
+                opacity: 1;
+                transform: translateY(-4px);
+            }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 100%;
+                transform: translateX(-100%);
+            }
+
+            .main-content {
+                margin-left: 0;
+            }
+
+            .welcome-title {
+                font-size: 28px;
+            }
+
+            .suggestions-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .chat-container {
+                padding: 0 12px;
+            }
+        }
+
+        /* Smooth transitions */
+        .message-group {
+            animation: fadeInUp 0.3s ease-out;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 150;
+            display: none;
+        }
+
+        .overlay.active {
+            display: block;
+        }
+    </style>
 </head>
+
 <body>
-    
+    <div class="overlay" id="overlay" onclick="closeSidebar()"></div>
+
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="sidebar-title">Menu</div>
+            <button class="sidebar-close" onclick="closeSidebar()">x</button>
+        </div>
+        <div class="sidebar-content">
+            <div class="sidebar-section">
+                <div class="sidebar-section-title">Actions</div>
+                <div class="sidebar-item" onclick="clearChat()">
+                    <span>🗑️</span>
+                    <span>Clear Chat</span>
+                </div>
+                <div class="sidebar-item" onclick="showHelp()">
+                    <span>❓</span>
+                    <span>Help</span>
+                </div>
+                <div class="sidebar-item" onclick="getStats()">
+                    <span>📊</span>
+                    <span>Statistics</span>
+                </div>
+            </div>
+
+            <div class="sidebar-section">
+                <div class="sidebar-section-title">Quick Actions</div>
+                <div class="sidebar-item"
+                    onclick="sendSuggestion('Find recent papers about machine learning in healthcare')">
+                    <span>🏥</span>
+                    <span>ML in Healthcare</span>
+                </div>
+                <div class="sidebar-item" onclick="sendSuggestion('Show me trending AI research topics')">
+                    <span>🤖</span>
+                    <span>Trending AI Topics</span>
+                </div>
+                <div class="sidebar-item" onclick="sendSuggestion('Find papers by a specific author')">
+                    <span>👤</span>
+                    <span>Author Search</span>
+                </div>
+            </div>
+
+            <div class="sidebar-section">
+                <div class="sidebar-section-title">Settings</div>
+                <div class="sidebar-item" onclick="toggleTheme()">
+                    <span id="sidebarThemeIcon">🌙</span>
+                    <span>Toggle Theme</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="main-content" id="mainContent">
+        <div class="header">
+            <div class="header-left">
+                <button class="sidebar-toggle" onclick="toggleSidebar()" title="Toggle sidebar">
+                    <span>☰</span>
+                </button>
+                <div class="logo">Scopus Research Assistant</div>
+            </div>
+            <div class="header-right">
+                <button class="header-btn" onclick="clearChat()">Clear Chat</button>
+                <button class="header-btn" onclick="showHelp()">Help</button>
+                <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
+                    <span id="themeIcon">🌙</span>
+                </button>
+                <button class="upgrade-btn" onclick="getStats()">
+                    <span>⬆️</span>
+                    Get Stats
+                </button>
+            </div>
+        </div>
+
+        <div class="chat-container">
+            <div class="chat-area">
+                <div class="messages-container" id="messagesContainer">
+                    <div class="welcome-container" id="welcomeContainer">
+                        <h1 class="welcome-title">What's on your research mind today?</h1>
+                        <p class="welcome-subtitle">
+                            Ready to help you explore scientific literature again. What would you like to research?
+                        </p>
+
+                        <div class="suggestions-grid">
+                            <div class="suggestion-card"
+                                onclick="sendSuggestion('Find recent papers about machine learning in healthcare')">
+                                <div class="suggestion-title">ML in Healthcare Research</div>
+                                <div class="suggestion-desc">Discover recent machine learning applications in medical
+                                    research</div>
+                            </div>
+                            <div class="suggestion-card"
+                                onclick="sendSuggestion('Show me trending AI research topics')">
+                                <div class="suggestion-title">Trending AI Topics</div>
+                                <div class="suggestion-desc">Explore what's hot in artificial intelligence research
+                                </div>
+                            </div>
+                            <div class="suggestion-card" onclick="sendSuggestion('Find papers by a specific author')">
+                                <div class="suggestion-title">Author Publications</div>
+                                <div class="suggestion-desc">Look up publications by researchers and academics</div>
+                            </div>
+                            <div class="suggestion-card" onclick="sendSuggestion('What are the database statistics?')">
+                                <div class="suggestion-title">Database Overview</div>
+                                <div class="suggestion-desc">Get insights into research database size and coverage</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="typing-indicator" id="typingIndicator">
+                        <div class="typing-content">
+                            <div class="message-avatar" style="background: var(--accent); color: white;">🔬</div>
+                            <div>
+                                <div style="color: var(--text-secondary);">Thinking...</div>
+                                <div class="typing-dots">
+                                    <div class="typing-dot"></div>
+                                    <div class="typing-dot"></div>
+                                    <div class="typing-dot"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="input-container">
+                    <div class="input-wrapper">
+                        <div class="input-row">
+                            <button class="tools-btn" onclick="toggleSidebar()" title="Tools">
+                                <span>🔧</span>
+                                <span>Tools</span>
+                            </button>
+                            <textarea class="message-input" id="messageInput" placeholder="Ask anything" rows="1"
+                                onkeydown="handleKeyDown(event)" oninput="autoResize(this)"></textarea>
+                            <button class="send-btn" id="sendBtn" onclick="sendMessage()" title="Send message">
+                                <span>⬆️</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let isTyping = false;
+        let messageCount = 0;
+        let sidebarVisible = true;
+
+        // Sidebar management
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const mainContent = document.getElementById('mainContent');
+            const overlay = document.getElementById('overlay');
+
+            sidebarVisible = !sidebarVisible;
+
+            if (sidebarVisible) {
+                sidebar.classList.remove('hidden');
+                mainContent.classList.remove('sidebar-hidden');
+                if (window.innerWidth <= 768) {
+                    overlay.classList.add('active');
+                }
+            } else {
+                sidebar.classList.add('hidden');
+                mainContent.classList.add('sidebar-hidden');
+                overlay.classList.remove('active');
+            }
+        }
+
+        function closeSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const mainContent = document.getElementById('mainContent');
+            const overlay = document.getElementById('overlay');
+
+            sidebarVisible = false;
+            sidebar.classList.add('hidden');
+            mainContent.classList.add('sidebar-hidden');
+            overlay.classList.remove('active');
+        }
+
+        // Theme management
+        function toggleTheme() {
+            const currentTheme = document.documentElement.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+
+            document.documentElement.setAttribute('data-theme', newTheme);
+            document.getElementById('themeIcon').textContent = newTheme === 'dark' ? '☀️' : '🌙';
+            document.getElementById('sidebarThemeIcon').textContent = newTheme === 'dark' ? '☀️' : '🌙';
+            localStorage.setItem('theme', newTheme);
+        }
+
+        // Initialize theme
+        function initTheme() {
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+            document.getElementById('themeIcon').textContent = savedTheme === 'dark' ? '☀️' : '🌙';
+            document.getElementById('sidebarThemeIcon').textContent = savedTheme === 'dark' ? '☀️' : '🌙';
+        }
+
+        function autoResize(textarea) {
+            textarea.style.height = 'auto';
+            textarea.style.height = Math.min(textarea.scrollHeight, 120) + 'px';
+        }
+
+        function handleKeyDown(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                sendMessage();
+            }
+        }
+
+        function sendSuggestion(message) {
+            document.getElementById('messageInput').value = message;
+            sendMessage();
+            if (window.innerWidth <= 768) {
+                closeSidebar();
+            }
+        }
+
+        function clearChat() {
+            const container = document.getElementById('messagesContainer');
+            const welcomeContainer = document.getElementById('welcomeContainer');
+
+            // Remove all message groups
+            const messageGroups = container.querySelectorAll('.message-group');
+            messageGroups.forEach(group => group.remove());
+
+            // Show welcome screen again
+            welcomeContainer.style.display = 'flex';
+
+            messageCount = 0;
+
+            if (window.innerWidth <= 768) {
+                closeSidebar();
+            }
+        }
+
+        function showHelp() {
+            const welcomeContainer = document.getElementById('welcomeContainer');
+            if (welcomeContainer) {
+                welcomeContainer.style.display = 'none';
+            }
+
+            const helpMessage = `# 🔬 Scopus Research Assistant Help
+
+            ## What I Can Do
+            - **Search Research Papers**: Find academic papers on any topic
+            - **Author Lookup**: Search for publications by specific researchers
+            - **Trending Topics**: Discover what's hot in various research fields
+            - **Database Statistics**: Get insights about the research database
+
+            ## How to Use
+            - Simply type your research question or topic
+            - Use the sidebar quick actions for common searches
+            - Use "Clear Chat" to start a new conversation
+
+            ## Tips for Better Results
+            - Be specific with your search terms
+            - Include relevant keywords and concepts
+            - Use the statistics feature to understand database coverage
+
+            Feel free to ask any questions about research topics, and I'll do my best to help you find relevant academic papers and information!`;
+
+            addMessage(helpMessage, 'assistant');
+
+            if (window.innerWidth <= 768) {
+                closeSidebar();
+            }
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const message = input.value.trim();
+
+            if (!message || isTyping) return;
+
+            // Hide welcome screen
+            const welcomeContainer = document.getElementById('welcomeContainer');
+            if (welcomeContainer && welcomeContainer.style.display !== 'none') {
+                welcomeContainer.style.display = 'none';
+            }
+
+            // Add user message
+            addMessage(message, 'user');
+            input.value = '';
+            input.style.height = 'auto';
+
+            // Show typing indicator
+            showTyping();
+
+            try {
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ message: message })
+                });
+
+                const data = await response.json();
+
+                // Hide typing indicator
+                hideTyping();
+
+                if (data.success) {
+                    addMessage(data.response, 'assistant');
+                } else {
+                    addMessage(data.response || 'I encountered an error. Please try again.', 'assistant');
+                }
+            } catch (error) {
+                hideTyping();
+                addMessage('I\'m having trouble connecting. Please check your connection and try again.', 'assistant');
+                console.error('Error:', error);
+            }
+        }
+
+        function addMessage(content, sender) {
+            const container = document.getElementById('messagesContainer');
+
+            const messageGroup = document.createElement('div');
+            messageGroup.className = 'message-group';
+
+            const message = document.createElement('div');
+            message.className = `message ${sender}`;
+
+            const avatar = document.createElement('div');
+            avatar.className = 'message-avatar';
+            if (sender === 'user') {
+                avatar.textContent = 'U';
+                avatar.style.background = 'var(--accent)';
+                avatar.style.color = 'white';
+            } else {
+                avatar.textContent = '🔬';
+                avatar.style.background = 'var(--accent)';
+                avatar.style.color = 'white';
+            }
+
+            const messageContent = document.createElement('div');
+            messageContent.className = 'message-content';
+            messageContent.innerHTML = formatMessage(content);
+
+            message.appendChild(avatar);
+            message.appendChild(messageContent);
+            messageGroup.appendChild(message);
+
+            container.appendChild(messageGroup);
+            container.scrollTop = container.scrollHeight;
+
+            messageCount++;
+        }
+
+        function formatMessage(content) {
+            return content
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                .replace(/`([^`]+)`/g, '<code>$1</code>')
+                .replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>')
+                .replace(/^### (.*$)/gm, '<h3>$1</h3>')
+                .replace(/^## (.*$)/gm, '<h2>$1</h2>')
+                .replace(/^# (.*$)/gm, '<h1>$1</h1>')
+                .replace(/^\- (.*$)/gm, '<li>$1</li>')
+                .replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>')
+                .replace(/\n/g, '<br>');
+        }
+
+        function showTyping() {
+            isTyping = true;
+            document.getElementById('typingIndicator').style.display = 'block';
+            document.getElementById('sendBtn').disabled = true;
+
+            const container = document.getElementById('messagesContainer');
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function hideTyping() {
+            isTyping = false;
+            document.getElementById('typingIndicator').style.display = 'none';
+            document.getElementById('sendBtn').disabled = false;
+        }
+
+        async function getStats() {
+            try {
+                showTyping();
+                const response = await fetch('/api/stats');
+                const data = await response.json();
+                hideTyping();
+
+                if (data.success) {
+                    const welcomeContainer = document.getElementById('welcomeContainer');
+                    if (welcomeContainer) {
+                        welcomeContainer.style.display = 'none';
+                    }
+
+                    const stats = data.stats;
+                    let statsMessage = "# 📊 System Statistics\n\n";
+
+                    if (stats.database) {
+                        statsMessage += `## Database Overview\n`;
+                        statsMessage += `- **Total Articles**: ${stats.database.total_articles?.toLocaleString() || 0}\n`;
+                        statsMessage += `- **Articles with Abstracts**: ${stats.database.articles_with_abstracts?.toLocaleString() || 0}\n`;
+                        statsMessage += `- **Total Authors**: ${stats.database.total_authors?.toLocaleString() || 0}\n\n`;
+                    }
+
+                    if (stats.vector_index) {
+                        statsMessage += `## Search Index\n`;
+                        statsMessage += `- **Indexed Documents**: ${stats.vector_index.index_size?.toLocaleString() || 0}\n`;
+                        statsMessage += `- **Index Type**: ${stats.vector_index.index_type || 'Not specified'}\n\n`;
+                    }
+
+                    statsMessage += `## System Status\n`;
+                    statsMessage += `${stats.system?.components_initialized ? '✅ All systems operational' : '⚠️ Some components initializing'}`;
+
+                    addMessage(statsMessage, 'assistant');
+                } else {
+                    addMessage('Unable to retrieve system statistics at the moment.', 'assistant');
+                }
+            } catch (error) {
+                hideTyping();
+                console.error('Error getting stats:', error);
+                addMessage('Error retrieving system statistics.', 'assistant');
+            }
+
+            if (window.innerWidth <= 768) {
+                closeSidebar();
+            }
+        }
+
+        // Handle window resize
+        function handleResize() {
+            if (window.innerWidth > 768 && sidebarVisible) {
+                document.getElementById('overlay').classList.remove('active');
+            } else if (window.innerWidth <= 768 && sidebarVisible) {
+                document.getElementById('overlay').classList.add('active');
+            }
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function () {
+            initTheme();
+            document.getElementById('messageInput').focus();
+
+            // Initialize sidebar as hidden
+            const sidebar = document.getElementById('sidebar');
+            const mainContent = document.getElementById('mainContent');
+            sidebar.classList.remove('hidden');
+            mainContent.classList.remove('sidebar-hidden');
+
+            // Add resize listener
+            window.addEventListener('resize', handleResize);
+        });
+    </script>
 </body>
+
 </html>
