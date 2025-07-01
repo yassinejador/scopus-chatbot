@@ -173,8 +173,14 @@ Detailed instructions for data preparation will be provided in a separate `DATA_
 
 ### 6. Run the Chatbot
 
+Run and setup data (just for the first time)
 ```bash
-python main.py
+python main.py --mode web --setup-data
+```
+
+If you already ran cmd with "--setup-data" then run
+```bash
+python main.py --mode web
 ```
 
 This will start the Flask web server, and you can access the chatbot through your web browser, usually at `http://127.0.0.1:5000`.
