@@ -15,7 +15,7 @@ import json
 # Add parent directory to path to import modules
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from config import FLASK_HOST, FLASK_PORT, FLASK_DEBUG
+from config import FLASK_HOST, FLASK_PORT, FLASK_SECRET_KEY, FLASK_DEBUG
 from data_management.scopus_api_client import ScopusAPIClient
 from data_management.data_cleaner import ScopusDataCleaner
 from data_management.database_manager import ScopusDatabaseManager
@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
 
 # Initialize Flask app
 app = Flask(__name__)
-app.secret_key = 'scopus_chatbot_secret_key_2024'  # Change this in production
+app.secret_key = FLASK_SECRET_KEY
 CORS(app)  # Enable CORS for all routes
 
 # Global variables for components

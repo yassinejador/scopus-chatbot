@@ -16,3 +16,4 @@ scikit-learn
 transformers
 torch
 tqdm
+gunicorn

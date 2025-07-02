@@ -23,7 +23,8 @@ EMBEDDINGS_MODEL = 'all-MiniLM-L6-v2'  # Sentence transformer model
 # Web Interface Configuration
 FLASK_HOST = '127.0.0.1'
 FLASK_PORT = 5000
-FLASK_DEBUG = True
+FLASK_SECRET_KEY = os.getenv("FLASK_SECRET_KEY", "your_secret_key_here")
+FLASK_DEBUG = os.getenv('FLASK_DEBUG', 'False')
 
 # Search Configuration
 DEFAULT_SEARCH_LIMIT = 200
