@@ -596,5 +596,4 @@ if __name__ == "__main__":
     # Test help response
     print("Testing Help Response:")
     help_response = generator.generate_help_response()
-    print(help_response[:500] + "...")  # Show first 500 characters
-
+    print(help_response[:500] + "...")  # Show first 500 characters</LongCaption>

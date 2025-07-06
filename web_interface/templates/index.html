@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Scopus Research Assistant</title>
-    <style>
+      <style>
         * {
             margin: 0;
             padding: 0;
@@ -619,12 +619,15 @@
                     <span>📊</span>
                     <span>Statistics</span>
                 </div>
+                <div class="sidebar-item" onclick="getConversation()">
+                    <span>💬</span>
+                    <span>View History</span>
+                </div>
             </div>
 
             <div class="sidebar-section">
                 <div class="sidebar-section-title">Quick Actions</div>
-                <div class="sidebar-item"
-                    onclick="sendSuggestion('Find recent papers about machine learning in healthcare')">
+                <div class="sidebar-item" onclick="sendSuggestion('Find recent papers about machine learning in healthcare')">
                     <span>🏥</span>
                     <span>ML in Healthcare</span>
                 </div>
@@ -679,17 +682,13 @@
                         </p>
 
                         <div class="suggestions-grid">
-                            <div class="suggestion-card"
-                                onclick="sendSuggestion('Find recent papers about machine learning in healthcare')">
+                            <div class="suggestion-card" onclick="sendSuggestion('Find recent papers about machine learning in healthcare')">
                                 <div class="suggestion-title">ML in Healthcare Research</div>
-                                <div class="suggestion-desc">Discover recent machine learning applications in medical
-                                    research</div>
+                                <div class="suggestion-desc">Discover recent machine learning applications in medical research</div>
                             </div>
-                            <div class="suggestion-card"
-                                onclick="sendSuggestion('Show me trending AI research topics')">
+                            <div class="suggestion-card" onclick="sendSuggestion('Show me trending AI research topics')">
                                 <div class="suggestion-title">Trending AI Topics</div>
-                                <div class="suggestion-desc">Explore what's hot in artificial intelligence research
-                                </div>
+                                <div class="suggestion-desc">Explore what's hot in artificial intelligence research</div>
                             </div>
                             <div class="suggestion-card" onclick="sendSuggestion('Find papers by a specific author')">
                                 <div class="suggestion-title">Author Publications</div>
@@ -740,6 +739,8 @@
         let isTyping = false;
         let messageCount = 0;
         let sidebarVisible = true;
+        let sessionId = localStorage.getItem('sessionId') || crypto.randomUUID(); // Générer un sessionId unique
+        localStorage.setItem('sessionId', sessionId); // Stocker le sessionId
 
         // Sidebar management
         function toggleSidebar() {
@@ -889,7 +890,7 @@
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({ message: message })
+                    body: JSON.stringify({ message: message, session_id: sessionId })
                 });
 
                 const data = await response.json();
@@ -1013,6 +1014,43 @@
                 hideTyping();
                 console.error('Error getting stats:', error);
                 addMessage('Error retrieving system statistics.', 'assistant');
+            }
+
+            if (window.innerWidth <= 768) {
+                closeSidebar();
+            }
+        }
+
+        async function getConversation() {
+            try {
+                showTyping();
+                const response = await fetch('/api/conversation?session_id=' + sessionId);
+                const data = await response.json();
+                hideTyping();
+
+                if (data.success) {
+                    const welcomeContainer = document.getElementById('welcomeContainer');
+                    if (welcomeContainer) {
+                        welcomeContainer.style.display = 'none';
+                    }
+
+                    const container = document.getElementById('messagesContainer');
+                    const messageGroups = container.querySelectorAll('.message-group');
+                    messageGroups.forEach(group => group.remove());
+
+                    data.conversation.forEach(entry => {
+                        addMessage(entry.user_message, 'user');
+                        addMessage(entry.bot_response, 'assistant');
+                    });
+
+                    container.scrollTop = container.scrollHeight;
+                } else {
+                    addMessage('Unable to retrieve conversation history.', 'assistant');
+                }
+            } catch (error) {
+                hideTyping();
+                console.error('Error getting conversation:', error);
+                addMessage('Error retrieving conversation history.', 'assistant');
             }
 
             if (window.innerWidth <= 768) {

@@ -11,6 +11,7 @@ import os
 import sys
 from datetime import datetime
 import json
+import uuid
 
 # Add parent directory to path to import modules
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -84,6 +85,8 @@ def chat():
     try:
         data = request.get_json()
         user_message = data.get('message', '').strip()
+        session_id = session.get('session_id', str(uuid.uuid4()))
+        session['session_id'] = session_id
         
         if not user_message:
             return jsonify({
@@ -202,16 +205,8 @@ def chat():
             
             response_text = response_generator.generate_search_response(query_info, articles)
         
-        # Store conversation in session
-        if 'conversation' not in session:
-            session['conversation'] = []
-        
-        session['conversation'].append({
-            'user_message': user_message,
-            'bot_response': response_text,
-            'timestamp': datetime.now().isoformat(),
-            'intent': intent
-        })
+        # Store conversation in database
+        db_manager.insert_chat_history(user_message, response_text, session_id)
         
         return jsonify({
             'success': True,
@@ -291,7 +286,9 @@ def stats_endpoint():
 def get_conversation():
     """Get conversation history."""
     try:
-        conversation = session.get('conversation', [])
+        session_id = session.get('session_id', str(uuid.uuid4()))
+        session['session_id'] = session_id
+        conversation = db_manager.get_chat_history(session_id)
         return jsonify({
             'success': True,
             'conversation': conversation
@@ -307,7 +304,13 @@ def get_conversation():
 def clear_conversation():
     """Clear conversation history."""
     try:
-        session['conversation'] = []
+        session_id = session.get('session_id', str(uuid.uuid4()))
+        session['session_id'] = session_id
+        # Supprime toutes les entrées de chat_history pour cette session
+        with sqlite3.connect(db_manager.db_path) as conn:
+            cursor = conn.cursor()
+            cursor.execute("DELETE FROM chat_history WHERE session_id = ?", (session_id,))
+            conn.commit()
         return jsonify({
             'success': True,
             'message': 'Conversation history cleared'
@@ -348,4 +351,3 @@ if __name__ == '__main__':
     else:
         logger.error("Failed to initialize components. Exiting.")
         sys.exit(1)
-
