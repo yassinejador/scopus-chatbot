@@ -186,6 +186,16 @@ class ScopusDatabaseManager:
                 for _, row in df_articles.iterrows():
                     try:
                         cursor = conn.cursor()
+                        # Conversion sécurisée du cover_date
+                        cover_date = row.get('cover_date')
+                        if pd.notna(cover_date):
+                            if isinstance(cover_date, pd.Timestamp):
+                                cover_date = cover_date.strftime('%Y-%m-%d')
+                            else:
+                                cover_date = str(cover_date)
+                        else:
+                            cover_date = None
+
                         cursor.execute('''
                             INSERT OR REPLACE INTO articles 
                             (scopus_id, eid, title, abstract, publication_name, cover_date, year,
@@ -198,7 +208,7 @@ class ScopusDatabaseManager:
                             str(row.get('title', '')),
                             str(row.get('abstract', '')),
                             str(row.get('publication_name', '')),
-                            row.get('cover_date'),
+                            cover_date,
                             int(row.get('year', 0)) if pd.notna(row.get('year')) else None,
                             str(row.get('doi', '')),
                             int(row.get('cited_by_count', 0)) if pd.notna(row.get('cited_by_count')) else 0,
@@ -472,6 +482,29 @@ class ScopusDatabaseManager:
             logger.error(f"Erreur de base de données lors de la récupération d'articles avec résumés: {str(e)}")
             return pd.DataFrame()
     
+    def get_articles_with_abstracts_batch(self, limit: int = 100, offset: int = 0) -> pd.DataFrame:
+        """
+        Récupère un batch d'articles qui ont des résumés (pour l'indexation sémantique).
+        Args:
+            limit (int): Nombre maximum d'articles à retourner
+            offset (int): Nombre d'articles à ignorer
+        Returns:
+            pd.DataFrame: Articles avec résumés
+        """
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                query = """
+                    SELECT * FROM articles
+                    WHERE abstract IS NOT NULL AND TRIM(abstract) != ''
+                    ORDER BY cover_date DESC, cited_by_count DESC
+                    LIMIT ? OFFSET ?
+                """
+                df = pd.read_sql_query(query, conn, params=(limit, offset))
+                return df
+        except sqlite3.Error as e:
+            logger.error(f"Erreur lors de la récupération des articles avec résumés (batch): {str(e)}")
+            return pd.DataFrame()
+
     def get_database_stats(self) -> Dict[str, Any]:
         """
         Récupère les statistiques de la base de données.
@@ -643,6 +676,35 @@ class ScopusDatabaseManager:
         except Exception as e:
             logger.error(f"Erreur lors de la sauvegarde: {str(e)}")
             return False
+
+    def get_articles_with_authors(self, limit: int = None, offset: int = 0) -> pd.DataFrame:
+        """
+        Récupère les articles avec leurs auteurs associés.
+        Args:
+            limit (int): Nombre maximum d'articles à retourner
+            offset (int): Nombre d'articles à ignorer
+        Returns:
+            pd.DataFrame: Articles et auteurs
+        """
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                query = """
+                    SELECT a.scopus_id, a.title, a.publication_name, a.year, au.authname
+                    FROM articles a
+                    LEFT JOIN article_authors aa ON a.scopus_id = aa.scopus_id
+                    LEFT JOIN authors au ON aa.authid = au.authid
+                    ORDER BY a.cover_date DESC, a.cited_by_count DESC
+                """
+                if limit:
+                    query += f" LIMIT {limit}"
+                if offset:
+                    query += f" OFFSET {offset}"
+                df = pd.read_sql_query(query, conn)
+                logger.info(f"{len(df)} articles avec auteurs récupérés")
+                return df
+        except sqlite3.Error as e:
+            logger.error(f"Erreur lors de la récupération des articles avec auteurs: {str(e)}")
+            return pd.DataFrame()
 
 # Exemple d'utilisation et tests
 if __name__ == "__main__":

@@ -13,15 +13,14 @@ from pathlib import Path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from config import (
-    SCOPUS_API_KEY, 
     DATABASE_PATH, 
     VECTOR_INDEX_PATH,
     FLASK_HOST, 
     FLASK_PORT, 
     FLASK_DEBUG
-)
+)  # SCOPUS_API_KEY supprimé
 
-from data_management.scopus_api_client import ScopusAPIClient
+from data_management.scopus_api_client import ArXivAPIClient
 from data_management.data_cleaner import ScopusDataCleaner
 from data_management.database_manager import ScopusDatabaseManager
 from semantic_indexing.embedding_generator import AbstractEmbeddingGenerator
@@ -35,7 +34,6 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
-
 
 class ScopusChatbotApp:
     """
@@ -62,11 +60,6 @@ class ScopusChatbotApp:
             bool: True if all requirements are met
         """
         logger.info("Checking application requirements...")
-        
-        # Check API key
-        if not SCOPUS_API_KEY or SCOPUS_API_KEY == 'YOUR_SCOPUS_API_KEY_HERE':
-            logger.warning("Scopus API key not configured. Set SCOPUS_API_KEY environment variable.")
-            logger.warning("The application will work in demo mode with limited functionality.")
         
         # Check data directory
         data_dir = Path(DATABASE_PATH).parent
@@ -95,7 +88,7 @@ class ScopusChatbotApp:
             
             # Initialize data management components
             logger.info("Initializing data management components...")
-            self.api_client = ScopusAPIClient()
+            self.api_client = ArXivAPIClient()
             self.data_cleaner = ScopusDataCleaner()
             self.db_manager = ScopusDatabaseManager()
             
@@ -142,8 +135,8 @@ class ScopusChatbotApp:
                 logger.info(f"Database already contains {stats['total_articles']} articles")
                 return True
             
-            # Fetch sample data from Scopus API
-            logger.info("Fetching sample data from Scopus API...")
+            # Fetch sample data from ArXiv API
+            logger.info("Fetching sample data from ArXiv API...")
             articles = self.api_client.search_and_extract(query, max_results=max_results)
             
             if not articles:
@@ -162,7 +155,7 @@ class ScopusChatbotApp:
             affiliations_inserted = self.db_manager.insert_affiliations(df_affiliations)
             
             # Link articles and authors
-            links_created = self.db_manager.link_articles_authors(articles) # <-- Here it insert uncleaned data !
+            links_created = self.db_manager.link_articles_authors(articles)
             
             logger.info(f"Inserted: {articles_inserted} articles, {authors_inserted} authors, "
                        f"{affiliations_inserted} affiliations, {links_created} links")
@@ -365,4 +358,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-

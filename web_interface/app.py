@@ -12,12 +12,13 @@ import sys
 from datetime import datetime
 import json
 import uuid
+import sqlite3
 
 # Add parent directory to path to import modules
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from config import FLASK_HOST, FLASK_PORT, FLASK_SECRET_KEY, FLASK_DEBUG
-from data_management.scopus_api_client import ScopusAPIClient
+from data_management.scopus_api_client import ArXivAPIClient  # Modifié ici
 from data_management.data_cleaner import ScopusDataCleaner
 from data_management.database_manager import ScopusDatabaseManager
 from semantic_indexing.embedding_generator import AbstractEmbeddingGenerator
@@ -52,7 +53,7 @@ def initialize_components():
         logger.info("Initializing chatbot components...")
         
         # Initialize components
-        api_client = ScopusAPIClient()
+        api_client = ArXivAPIClient()  # Modifié ici
         data_cleaner = ScopusDataCleaner()
         db_manager = ScopusDatabaseManager()
         embedding_generator = AbstractEmbeddingGenerator()
@@ -66,6 +67,9 @@ def initialize_components():
         else:
             logger.info("No existing vector index found")
         
+        # Initialize embeddings if needed
+        _initialize_embeddings()
+        
         logger.info("All components initialized successfully")
         return True
         
@@ -73,6 +77,103 @@ def initialize_components():
         logger.error(f"Error initializing components: {str(e)}")
         logger.error(traceback.format_exc())
         return False
+
+def _initialize_embeddings():
+    """Initialize embeddings from existing database articles."""
+    try:
+        # Get current index stats
+        index_stats = vector_index.get_index_stats()
+        current_embeddings_count = index_stats.get('total_embeddings', 0)
+        
+        # Get database stats
+        db_stats = db_manager.get_database_stats()
+        articles_with_abstracts = db_stats.get('articles_with_abstracts', 0)
+        
+        logger.info(f"Current embeddings in index: {current_embeddings_count}")
+        logger.info(f"Articles with abstracts in database: {articles_with_abstracts}")
+        
+        # If we have articles but no embeddings, generate them
+        if articles_with_abstracts > 0 and current_embeddings_count == 0:
+            logger.info("Generating initial embeddings from database articles...")
+            
+            # Get articles with abstracts in batches
+            batch_size = 100
+            offset = 0
+            total_processed = 0
+            
+            while True:
+                # Get batch of articles
+                articles_df = db_manager.get_articles_with_abstracts_batch(
+                    limit=batch_size, 
+                    offset=offset
+                )
+                
+                if articles_df.empty:
+                    break
+                
+                # Generate embeddings for this batch
+                embeddings_dict = embedding_generator.generate_embeddings_from_dataframe(articles_df)
+                
+                if embeddings_dict:
+                    # Create index if it doesn't exist
+                    if vector_index.index is None:
+                        vector_index.create_index('flat')
+                    
+                    # Add embeddings to index
+                    added_count = vector_index.add_embeddings(embeddings_dict)
+                    total_processed += added_count
+                    
+                    logger.info(f"Processed batch: {added_count} embeddings added (total: {total_processed})")
+                
+                offset += batch_size
+                
+                # Break if we got less than batch_size (last batch)
+                if len(articles_df) < batch_size:
+                    break
+            
+            if total_processed > 0:
+                # Save the index
+                vector_index.save_index()
+                logger.info(f"Initial embeddings generation completed: {total_processed} embeddings created")
+            else:
+                logger.warning("No embeddings were generated from database articles")
+        
+        elif current_embeddings_count > 0:
+            logger.info("Embeddings already exist in index, skipping initialization")
+        
+        else:
+            logger.info("No articles with abstracts found in database")
+            
+    except Exception as e:
+        logger.error(f"Error initializing embeddings: {str(e)}")
+        logger.error(traceback.format_exc())
+
+def _update_embeddings_for_new_articles():
+    """Update embeddings for articles that don't have embeddings yet."""
+    try:
+        # Get articles that might not have embeddings
+        articles_df = db_manager.get_articles_without_embeddings()
+        
+        if not articles_df.empty:
+            logger.info(f"Found {len(articles_df)} articles without embeddings")
+            
+            # Generate embeddings
+            embeddings_dict = embedding_generator.generate_embeddings_from_dataframe(articles_df)
+            
+            if embeddings_dict:
+                # Ensure index exists
+                if vector_index.index is None:
+                    vector_index.create_index('flat')
+                
+                # Add embeddings
+                added_count = vector_index.add_embeddings(embeddings_dict)
+                
+                if added_count > 0:
+                    vector_index.save_index()
+                    logger.info(f"Added {added_count} new embeddings to index")
+                
+    except Exception as e:
+        logger.error(f"Error updating embeddings for new articles: {str(e)}")
 
 @app.route('/')
 def index():
@@ -123,6 +224,14 @@ def chat():
                 df_articles = data_cleaner.process_articles_dataframe(articles)
                 if not df_articles.empty:
                     db_manager.insert_articles(df_articles)
+                    
+                    # Generate and add embeddings for new articles
+                    embeddings_dict = embedding_generator.generate_embeddings_from_dataframe(df_articles)
+                    if embeddings_dict:
+                        if vector_index.index is None:
+                            vector_index.create_index('flat')
+                        vector_index.add_embeddings(embeddings_dict)
+                        vector_index.save_index()
             
             response_text = response_generator.generate_abstract_response(query_info, articles)
             
@@ -165,6 +274,8 @@ def chat():
                             # Update vector index
                             embeddings_dict = embedding_generator.generate_embeddings_from_dataframe(df_articles)
                             if embeddings_dict:
+                                if vector_index.index is None:
+                                    vector_index.create_index('flat')
                                 vector_index.add_embeddings(embeddings_dict)
                                 vector_index.save_index()
                     
@@ -202,6 +313,14 @@ def chat():
                 df_articles = data_cleaner.process_articles_dataframe(articles)
                 if not df_articles.empty:
                     db_manager.insert_articles(df_articles)
+                    
+                    # Generate and add embeddings
+                    embeddings_dict = embedding_generator.generate_embeddings_from_dataframe(df_articles)
+                    if embeddings_dict:
+                        if vector_index.index is None:
+                            vector_index.create_index('flat')
+                        vector_index.add_embeddings(embeddings_dict)
+                        vector_index.save_index()
             
             response_text = response_generator.generate_search_response(query_info, articles)
         
@@ -306,20 +425,75 @@ def clear_conversation():
     try:
         session_id = session.get('session_id', str(uuid.uuid4()))
         session['session_id'] = session_id
-        # Supprime toutes les entrées de chat_history pour cette session
-        with sqlite3.connect(db_manager.db_path) as conn:
-            cursor = conn.cursor()
-            cursor.execute("DELETE FROM chat_history WHERE session_id = ?", (session_id,))
-            conn.commit()
-        return jsonify({
-            'success': True,
-            'message': 'Conversation history cleared'
-        })
+        # Clear chat history for this session
+        success = db_manager.clear_chat_history(session_id)
+        if success:
+            return jsonify({
+                'success': True,
+                'message': 'Conversation history cleared'
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'error': 'Failed to clear conversation history'
+            })
     except Exception as e:
         logger.error(f"Error clearing conversation: {str(e)}")
         return jsonify({
             'success': False,
             'error': 'Error clearing conversation history'
+        })
+
+@app.route('/api/rebuild_index')
+def rebuild_index():
+    """Rebuild the vector index from scratch."""
+    try:
+        logger.info("Starting index rebuild...")
+        
+        # Clear existing index
+        vector_index.clear_index()
+        
+        # Initialize embeddings from database
+        _initialize_embeddings()
+        
+        # Get updated stats
+        index_stats = vector_index.get_index_stats()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Index rebuilt successfully',
+            'stats': index_stats
+        })
+        
+    except Exception as e:
+        logger.error(f"Error rebuilding index: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': 'Error rebuilding index'
+        })
+
+@app.route('/api/update_embeddings')
+def update_embeddings():
+    """Update embeddings for new articles."""
+    try:
+        logger.info("Updating embeddings for new articles...")
+        
+        _update_embeddings_for_new_articles()
+        
+        # Get updated stats
+        index_stats = vector_index.get_index_stats()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Embeddings updated successfully',
+            'stats': index_stats
+        })
+        
+    except Exception as e:
+        logger.error(f"Error updating embeddings: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': 'Error updating embeddings'
         })
 
 @app.errorhandler(404)
