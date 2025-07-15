@@ -4,12 +4,8 @@ Handles summarization, formatting, and presentation of information.
 """
 
 import logging
-from typing import Dict, List, Any, Optional, Tuple
-import pandas as pd
-import numpy as np
+from typing import Dict, List, Any
 from datetime import datetime
-import json
-import re
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -55,10 +51,6 @@ class ResponseGenerator:
             'get_statistics': {
                 'overview': "Here's an overview of the research data:",
                 'specific': "Based on your query, here are the statistics:"
-            },
-            'compare_papers': {
-                'comparison': "Here's a comparison of the papers you requested:",
-                'similarity': "I found {count} papers similar to your reference. Here's how they compare:"
             }
         }
     
@@ -130,7 +122,8 @@ class ResponseGenerator:
                 # Standard format
                 result = f"**{title}**\n"
                 result += f"*{authors}*\n"
-                result += f"{publication}, {year}"
+                result += f"{publication}, {year}\n"
+                result += f"Year: {year}\n"
                 if citations > 0:
                     result += f" (Cited by {citations})"
                 result += "\n"
@@ -227,79 +220,52 @@ class ResponseGenerator:
                                 similarity_scores: List[float] = None) -> str:
         """
         Generate a response for search queries.
-        
-        Args:
-            query_info (dict): Processed query information
-            search_results (list): List of paper dictionaries
-            similarity_scores (list): Similarity scores for semantic search
-            
-        Returns:
-            str: Generated response
+        MODIFIED to always show abstracts for multiple results.
         """
         try:
             intent = query_info.get('intent', 'search_papers')
             keywords = query_info.get('keywords', [])
             topic = ', '.join(keywords) if keywords else 'your query'
             
-            # Get appropriate template
             templates = self.response_templates.get(intent, self.response_templates['search_papers'])
-            
-            # Determine response based on number of results
             num_results = len(search_results)
             
             if num_results == 0:
                 response = templates['no_results'].format(topic=topic)
-                
-                # Add suggestions
-                response += "\n\n**Suggestions:**\n"
-                response += "- Try using broader or more general terms\n"
-                response += "- Check spelling and try synonyms\n"
-                response += "- Remove specific filters like years or authors\n"
-                
+                response += "\n\n**Suggestions:**\n- Try using broader or more general terms\n- Check spelling and try synonyms\n"                
+            
             elif num_results == 1:
                 response = templates['single_result'].format(topic=topic)
                 response += "\n\n"
+                # For a single result, we show a detailed view with the abstract
                 response += self.format_paper_info(search_results[0], include_abstract=True, style='detailed')
                 
-            elif num_results <= 10:
+            else: # This block now handles ALL cases where num_results > 1
+                shown = len(search_results)
+                # Use a different introductory sentence for multiple results
                 response = templates['found_results'].format(count=num_results, topic=topic)
                 response += "\n\n"
                 
+                # Loop through all found papers
                 for i, paper in enumerate(search_results, 1):
                     response += f"### {i}. "
-                    response += self.format_paper_info(paper, include_abstract=False, style='standard')
+                    # *** THE KEY CHANGE IS HERE ***
+                    # We now call format_paper_info with include_abstract=True and a brief style
+                    # to show the summary for each item in the list.
+                    response += self.format_paper_info(paper, include_abstract=True, style='brief')
                     
-                    # Add similarity score if available
                     if similarity_scores and i-1 < len(similarity_scores):
                         score = similarity_scores[i-1]
-                        response += f"*Relevance: {score:.2f}*\n"
+                        response += f"*Relevance Score: {score:.2f}*\n"
                     
-                    response += "\n"
-                
-            else:
-                # Many results - show top 10
-                shown = min(10, num_results)
-                response = templates['many_results'].format(count=num_results, topic=topic, shown=shown)
-                response += "\n\n"
-                
-                for i, paper in enumerate(search_results[:shown], 1):
-                    response += f"### {i}. "
-                    response += self.format_paper_info(paper, include_abstract=False, style='brief')
-                    
-                    # Add similarity score if available
-                    if similarity_scores and i-1 < len(similarity_scores):
-                        score = similarity_scores[i-1]
-                        response += f"*Relevance: {score:.2f}*\n"
-                    
-                    response += "\n"
-                
-                response += f"\n*Showing top {shown} results out of {num_results} total.*\n"
+                    response += "\n---\n" # Add a separator for readability
             
             return response
             
         except Exception as e:
             logger.error(f"Error generating search response: {str(e)}")
             return "I encountered an error while processing your search results. Please try again."
+
     
     def generate_abstract_response(self, 
                                   query_info: Dict[str, Any],
@@ -399,70 +365,6 @@ class ResponseGenerator:
         except Exception as e:
             logger.error(f"Error generating statistics response: {str(e)}")
             return "I encountered an error while generating statistics. Please try again."
-    
-    def generate_comparison_response(self, 
-                                   query_info: Dict[str, Any],
-                                   papers: List[Dict[str, Any]],
-                                   similarity_matrix: np.ndarray = None) -> str:
-        """
-        Generate a response for paper comparison queries.
-        
-        Args:
-            query_info (dict): Processed query information
-            papers (list): List of papers to compare
-            similarity_matrix (np.ndarray): Similarity matrix between papers
-            
-        Returns:
-            str: Generated response
-        """
-        try:
-            templates = self.response_templates['compare_papers']
-            
-            if len(papers) < 2:
-                return "I need at least two papers to make a comparison. Please provide more specific criteria."
-            
-            response = templates['comparison']
-            response += "\n\n"
-            
-            # Compare basic metrics
-            response += "## Comparison Overview\n\n"
-            response += "| Paper | Year | Citations | Journal |\n"
-            response += "|-------|------|-----------|----------|\n"
-            
-            for i, paper in enumerate(papers[:5], 1):  # Limit to 5 papers
-                title = self._truncate_text(paper.get('title', 'Unknown'), 40)
-                year = paper.get('year', 'N/A')
-                citations = paper.get('cited_by_count', 0)
-                journal = self._truncate_text(paper.get('publication_name', 'Unknown'), 30)
-                
-                response += f"| {title} | {year} | {citations} | {journal} |\n"
-            
-            # Add detailed comparison
-            response += "\n## Detailed Comparison\n\n"
-            
-            for i, paper in enumerate(papers[:3], 1):  # Detailed view for top 3
-                response += f"### Paper {i}: {paper.get('title', 'Unknown Title')}\n"
-                response += self.format_paper_info(paper, include_abstract=True, style='brief')
-                response += "\n"
-            
-            # Add similarity information if available
-            if similarity_matrix is not None and len(similarity_matrix) > 1:
-                response += "\n## Similarity Analysis\n\n"
-                response += "The papers show varying degrees of similarity based on their abstracts:\n\n"
-                
-                for i in range(min(3, len(papers))):
-                    for j in range(i+1, min(3, len(papers))):
-                        if i < len(similarity_matrix) and j < len(similarity_matrix[0]):
-                            similarity = similarity_matrix[i][j]
-                            paper1_title = self._truncate_text(papers[i].get('title', 'Paper 1'), 30)
-                            paper2_title = self._truncate_text(papers[j].get('title', 'Paper 2'), 30)
-                            response += f"- **{paper1_title}** vs **{paper2_title}**: {similarity:.2f} similarity\n"
-            
-            return response
-            
-        except Exception as e:
-            logger.error(f"Error generating comparison response: {str(e)}")
-            return "I encountered an error while comparing the papers. Please try again."
     
     def generate_error_response(self, error_message: str, query_info: Dict[str, Any] = None) -> str:
         """
@@ -596,4 +498,5 @@ if __name__ == "__main__":
     # Test help response
     print("Testing Help Response:")
     help_response = generator.generate_help_response()
-    print(help_response[:500] + "...")  # Show first 500 characters</LongCaption>
+    print(help_response[:500] + "...")  # Show first 500 characters
+

@@ -18,7 +18,7 @@ DATABASE_PATH = "data/scopus_database.db"
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-class ScopusDatabaseManager:
+class ArxivDatabaseManager:
     """
     Gère la base de données SQLite pour stocker les données d'articles Scopus et l'historique de chat.
     """
@@ -709,7 +709,7 @@ class ScopusDatabaseManager:
 # Exemple d'utilisation et tests
 if __name__ == "__main__":
     # Tester le gestionnaire de base de données
-    db_manager = ScopusDatabaseManager()
+    db_manager = ArxivDatabaseManager()
     
     # Obtenir les statistiques de la base de données
     stats = db_manager.get_database_stats()

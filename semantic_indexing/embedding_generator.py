@@ -1,5 +1,5 @@
 """
-Embedding Generator for converting article abstracts into numerical vectors.
+EEmbedding Generator for converting article abstracts into numerical vectors.
 Uses sentence-transformers for semantic embeddings with special focus on abstracts.
 """
 
@@ -428,4 +428,3 @@ if __name__ == "__main__":
     print("\nEmbedding Generator Stats:")
     for key, value in stats.items():
         print(f"{key}: {value}")
-

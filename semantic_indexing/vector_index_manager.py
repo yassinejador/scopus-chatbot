@@ -8,6 +8,7 @@ import pandas as pd
 import logging
 from typing import List, Dict, Any, Optional, Tuple
 from pathlib import Path
+from semantic_indexing.embedding_generator import AbstractEmbeddingGenerator
 import pickle
 import json
 import faiss
@@ -18,6 +19,7 @@ from config import VECTOR_INDEX_PATH, BASE_DIR
 # Set up logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
 
 class VectorIndexManager:
     """
@@ -32,7 +34,7 @@ class VectorIndexManager:
             index_path (str): Path to save/load the FAISS index
             embedding_dim (int): Dimension of embedding vectors
         """
-        self.index_path = Path(index_path) if index_path else VECTOR_INDEX_PATH
+        self.index_path = Path("data/vector_index.faiss")
         self.embedding_dim = embedding_dim
         
         # Ensure directory exists
@@ -227,7 +229,7 @@ class VectorIndexManager:
     
     def search_by_text(self, 
                       query_text: str,
-                      embedding_generator,
+                      embedding_generator: AbstractEmbeddingGenerator,
                       top_k: int = 10,
                       score_threshold: float = 0.0) -> List[Tuple[str, float, Dict]]:
         """
@@ -272,7 +274,7 @@ class VectorIndexManager:
         if self.index is None:
             logger.warning("No index to save")
             return
-    
+        
         try:
             # Save FAISS index
             index_file = self.index_path.parent / (index_filename or f"{self.index_path.stem}.faiss")
@@ -479,7 +481,7 @@ if __name__ == "__main__":
     # Test search
     print("\nTesting search...")
     query_embedding = np.random.rand(384).astype(np.float32)
-    results = index_manager.search(query_embedding, top_k=3)
+    results = index_manager.search(query_embedding, top_k=10)
     
     print(f"Found {len(results)} results:")
     for doc_id, score, metadata in results:
@@ -498,3 +500,4 @@ if __name__ == "__main__":
     print("\nIndex Statistics:")
     for key, value in stats.items():
         print(f"{key}: {value}")
+

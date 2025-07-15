@@ -5,7 +5,7 @@ Handles natural language processing for the chatbot.
 
 import re
 import logging
-from typing import Dict, List, Any, Optional, Tuple
+from typing import Dict, List, Any, Tuple
 from datetime import datetime
 import pandas as pd
 
@@ -69,11 +69,6 @@ class QueryProcessor:
                 r'\b(statistics?|stats|numbers?|count)\b',
                 r'\bhow many\b.*\b(papers?|articles?|authors?)\b',
                 r'\b(total|number of)\b.*\b(papers?|articles?|publications?)\b'
-            ],
-            'compare_papers': [
-                r'\b(compare|comparison|difference|similar)\b.*\b(papers?|articles?|studies?)\b',
-                r'\b(similar|related)\b.*\b(to|with)\b',
-                r'\bfind.*\b(similar|related|comparable)\b'
             ]
         }
     
@@ -403,7 +398,6 @@ class QueryProcessor:
         if num_results == 0:
             # No results found - suggest broader searches
             suggestions.append("Try using broader or more general terms")
-            suggestions.append("Remove specific years or author names")
             if len(keywords) > 3:
                 suggestions.append("Use fewer keywords for broader results")
         
@@ -421,7 +415,7 @@ class QueryProcessor:
         
         # Add field-specific suggestions
         if not entities.get('years') and not entities.get('year_ranges'):
-            suggestions.append("Add a specific year or year range (e.g., '2020-2023')")
+            suggestions.append("Add a specific year or year range")
         
         if not entities.get('potential_authors'):
             suggestions.append("Include specific author names")

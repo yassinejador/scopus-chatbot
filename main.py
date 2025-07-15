@@ -18,11 +18,11 @@ from config import (
     FLASK_HOST, 
     FLASK_PORT, 
     FLASK_DEBUG
-)  # SCOPUS_API_KEY supprimé
+)
 
-from data_management.scopus_api_client import ArXivAPIClient
-from data_management.data_cleaner import ScopusDataCleaner
-from data_management.database_manager import ScopusDatabaseManager
+from data_management.arxiv_api_client import ArxivAPIClient
+from data_management.data_cleaner import ArticleDataCleaner
+from data_management.database_manager import ArxivDatabaseManager
 from semantic_indexing.embedding_generator import AbstractEmbeddingGenerator
 from semantic_indexing.vector_index_manager import VectorIndexManager
 from chatbot_core.query_processor import QueryProcessor
@@ -34,6 +34,7 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+
 
 class ScopusChatbotApp:
     """
@@ -88,9 +89,9 @@ class ScopusChatbotApp:
             
             # Initialize data management components
             logger.info("Initializing data management components...")
-            self.api_client = ArXivAPIClient()
-            self.data_cleaner = ScopusDataCleaner()
-            self.db_manager = ScopusDatabaseManager()
+            self.api_client = ArxivAPIClient()
+            self.data_cleaner = ArticleDataCleaner()
+            self.db_manager = ArxivDatabaseManager()
             
             # Initialize semantic indexing components
             logger.info("Initializing semantic indexing components...")
@@ -104,7 +105,7 @@ class ScopusChatbotApp:
             
             # Try to load existing vector index
             if self.vector_index.load_index():
-                logger.info("Loaded existing vector index")
+                logger.info("Loaded existing vector index 🎉")
             else:
                 logger.info("No existing vector index found - will create when needed")
             
@@ -135,14 +136,19 @@ class ScopusChatbotApp:
                 logger.info(f"Database already contains {stats['total_articles']} articles")
                 return True
             
-            # Fetch sample data from ArXiv API
-            logger.info("Fetching sample data from ArXiv API...")
+            # Fetch sample data from Scopus API
+            logger.info("Fetching sample data from Scopus API...")
             articles = self.api_client.search_and_extract(query, max_results=max_results)
             
             if not articles:
                 logger.warning("No articles retrieved from API")
                 return False
             
+            # Fallback: ensure abstract is present by combining title + keywords
+            for article in articles:
+                if not article.get('abstract'):
+                    article['abstract'] = f"{article.get('title', '')} {article.get('author_keywords', '')}"
+
             # Clean and store the data
             logger.info(f"Processing {len(articles)} articles...")
             df_articles = self.data_cleaner.process_articles_dataframe(articles)
@@ -155,7 +161,7 @@ class ScopusChatbotApp:
             affiliations_inserted = self.db_manager.insert_affiliations(df_affiliations)
             
             # Link articles and authors
-            links_created = self.db_manager.link_articles_authors(articles)
+            links_created = self.db_manager.link_articles_authors(articles) # <-- Here it insert uncleaned data !
             
             logger.info(f"Inserted: {articles_inserted} articles, {authors_inserted} authors, "
                        f"{affiliations_inserted} affiliations, {links_created} links")
@@ -225,7 +231,7 @@ class ScopusChatbotApp:
                     # Try semantic search first
                     if self.vector_index.index_size > 0:
                         search_results = self.vector_index.search_by_text(
-                            user_input, self.embedding_generator, top_k=5
+                            user_input, self.embedding_generator, top_k=10
                         )
                         
                         if search_results:
@@ -299,10 +305,16 @@ class ScopusChatbotApp:
             logger.error("Component initialization failed")
             return False
         
-        # Set up sample data if requested
-        if setup_data:
+        # Determine if setup is needed
+        db_empty = self.db_manager.get_database_stats().get('total_articles', 0) == 0
+        index_exists = self.vector_index.load_index()
+
+        if setup_data or (db_empty and not index_exists):
+            logger.info("Setting up sample data...")
             if not self.setup_sample_data():
                 logger.warning("Sample data setup failed, continuing anyway...")
+        else:
+            logger.info("Sample data setup not needed")
         
         # Run in specified mode
         if mode == 'cli':
@@ -358,3 +370,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+

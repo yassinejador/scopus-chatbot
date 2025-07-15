@@ -1,5 +1,5 @@
 """
-Configuration file for the ArXiv Chatbot application.
+Configuration file for the Scopus Chatbot application.
 """
 
 import os
@@ -8,8 +8,10 @@ from pathlib import Path
 # Base directory of the project
 BASE_DIR = Path(__file__).parent
 
+ARXIV_BASE_URL = "http://export.arxiv.org/api/query"
+
 # Database Configuration
-DATABASE_PATH = BASE_DIR / 'data' / 'arxiv_data.db'  # Mis à jour pour refléter ArXiv
+DATABASE_PATH = BASE_DIR / 'data' / 'scopus_data.db'
 
 # Vector Index Configuration
 VECTOR_INDEX_PATH = BASE_DIR / 'data' / 'vector_index.faiss'
@@ -18,8 +20,7 @@ EMBEDDINGS_MODEL = 'all-MiniLM-L6-v2'  # Sentence transformer model
 # Web Interface Configuration
 FLASK_HOST = '127.0.0.1'
 FLASK_PORT = 5000
-FLASK_SECRET_KEY = os.getenv("FLASK_SECRET_KEY", "your_secret_key_here")
-FLASK_DEBUG = os.getenv('FLASK_DEBUG', 'False').lower() == 'true'  # Convertit en booléen
+FLASK_DEBUG = True
 
 # Search Configuration
 DEFAULT_SEARCH_LIMIT = 200
@@ -30,7 +31,3 @@ REQUEST_TIMEOUT = 30
 MAX_RETRIES = 3
 RETRY_DELAY = 1  # seconds
 
-# Note: Scopus-specific configurations are removed since we use ArXiv
-# SCOPUS_API_KEY = os.getenv('SCOPUS_API_KEY', 'YOUR_SCOPUS_API_KEY_HERE')  # Commenté
-# SCOPUS_BASE_URL = 'https://api.elsevier.com/content/search/scopus'       # Commenté
-# SCOPUS_ABSTRACT_URL = 'https://api.elsevier.com/content/abstract/scopus_id'  # Commenté
