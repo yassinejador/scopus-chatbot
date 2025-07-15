@@ -15,7 +15,7 @@ from datetime import datetime
 # Add parent directory to path to import modules
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from config import FLASK_HOST, FLASK_PORT, FLASK_DEBUG
+from config import FLASK_HOST, FLASK_PORT,FLASK_SECRET_KEY, FLASK_DEBUG
 # Updated imports to use the new ArXiv client and generic article cleaner
 from  data_management.arxiv_api_client import ArxivAPIClient
 from  data_management.data_cleaner import ArticleDataCleaner
@@ -31,7 +31,7 @@ logger = logging.getLogger(__name__)
 
 # Initialize Flask app
 app = Flask(__name__)
-app.secret_key = 'arxiv_chatbot_secret_key_2024'  # Change this in production
+app.secret_key = FLASK_SECRET_KEY  # Change this in production
 CORS(app)  # Enable CORS for all routes
 
 # Global variables for components
