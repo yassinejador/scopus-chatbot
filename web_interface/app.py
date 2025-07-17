@@ -256,6 +256,31 @@ def internal_error(error):
     logger.error(f"Internal server error: {str(error)}")
     return jsonify({'success': False, 'error': 'Internal server error'}), 500
 
+@app.route("/visualisation")
+def visualisation():
+    import plotly.graph_objs as go
+    from flask import render_template
+
+    labels = ["Articles", "Abstracts", "Authors"]
+    values = [16, 16, 1]
+
+    fig = go.Figure(data=[go.Pie(
+        labels=labels,
+        values=values,
+        hole=0.4,  # rend le graphe en forme de donut
+        marker=dict(colors=['#00b894', '#0984e3', '#6c5ce7']),
+        textinfo='label+percent',
+    )])
+
+    fig.update_layout(
+        title="Visualisation des Données",
+        annotations=[dict(text='Stats', x=0.5, y=0.5, font_size=20, showarrow=False)],
+    )
+
+    graph_html = fig.to_html(full_html=False)
+    return render_template("visualisation.html", graph_html=graph_html)
+
+
 if __name__ == '__main__':
     if initialize_components():
         logger.info(f"Starting Flask app on {FLASK_HOST}:{FLASK_PORT}")
