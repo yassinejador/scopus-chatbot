@@ -4,6 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <title>Scopus Research Assistant</title>
       <style>
         * {
@@ -135,7 +136,11 @@
             background: var(--accent);
             color: white;
         }
-
+          
+        .fa-solid {
+            color: #606060;
+        }
+          
         .main-content {
             flex: 1;
             display: flex;
@@ -608,38 +613,40 @@
             <div class="sidebar-section">
                 <div class="sidebar-section-title">Actions</div>
                 <div class="sidebar-item" onclick="clearChat()">
-                    <span>🗑️</span>
+                    <i class="fa-solid fa-trash"></i>
                     <span>Clear Chat</span>
                 </div>
+
                 <div class="sidebar-item" onclick="showHelp()">
-                    <span>❓</span>
+                    <i class="fa-solid fa-circle-question"></i>
                     <span>Help</span>
                 </div>
-                <div class="sidebar-item" onclick="window.open('/visualisation', '_blank')">
-                <span>📊</span>
-                <span>Statistics</span>
+
+                <div class="sidebar-item" onclick="getStats()">
+                    <i class="fa-solid fa-chart-bar"></i>
+                    <span>Statistics</span>
                 </div>
 
-                
                 <div class="sidebar-item" onclick="getConversation()">
-                    <span>💬</span>
+                    <i class="fa-solid fa-comments"></i>
                     <span>View History</span>
                 </div>
             </div>
 
             <div class="sidebar-section">
                 <div class="sidebar-section-title">Quick Actions</div>
-                <div class="sidebar-item" onclick="sendSuggestion('Find recent papers about machine learning in healthcare')">
-                    <span>🏥</span>
-                    <span>ML in Healthcare</span>
+                <div class="sidebar-item" onclick="sendSuggestion('Find recent papers about Quantum Computing')">
+                    <i class="fa-solid fa-atom"></i>
+                    <span>Quantum Computing</span>
                 </div>
+
                 <div class="sidebar-item" onclick="sendSuggestion('Show me trending AI research topics')">
-                    <span>🤖</span>
+                    <i class="fa-solid fa-chart-line"></i>
                     <span>Trending AI Topics</span>
                 </div>
-                <div class="sidebar-item" onclick="sendSuggestion('Find papers by a specific author')">
-                    <span>👤</span>
-                    <span>Author Search</span>
+                <div class="sidebar-item" onclick="sendSuggestion('Find papers about AI Agents')">
+                    <i class="fa-solid fa-user"></i>
+                    <span>AI Agents</span>
                 </div>
             </div>
 
@@ -668,7 +675,7 @@
                     <span id="themeIcon">🌙</span>
                 </button>
                 <button onclick="window.open('/visualisation', '_blank')" class="green-button">
-                📊 Get Stats
+                    Get Stats
                 </button>
             </div>
         </div>
@@ -683,17 +690,20 @@
                         </p>
 
                         <div class="suggestions-grid">
-                            <div class="suggestion-card" onclick="sendSuggestion('Find recent papers about machine learning in healthcare')">
-                                <div class="suggestion-title">ML in Healthcare Research</div>
-                                <div class="suggestion-desc">Discover recent machine learning applications in medical research</div>
+                            <div class="suggestion-card"
+                                onclick="sendSuggestion('Find recent papers about machine learning in healthcare')">
+                                <div class="suggestion-title">Quantum Computing Applications</div>
+                                <div class="suggestion-desc">Discover recent quantum computing applications</div>
                             </div>
-                            <div class="suggestion-card" onclick="sendSuggestion('Show me trending AI research topics')">
+                            <div class="suggestion-card"
+                                onclick="sendSuggestion('Show me trending AI research topics')">
                                 <div class="suggestion-title">Trending AI Topics</div>
-                                <div class="suggestion-desc">Explore what's hot in artificial intelligence research</div>
+                                <div class="suggestion-desc">Explore what's hot in artificial intelligence research
+                                </div>
                             </div>
                             <div class="suggestion-card" onclick="sendSuggestion('Find papers by a specific author')">
-                                <div class="suggestion-title">Author Publications</div>
-                                <div class="suggestion-desc">Look up publications by researchers and academics</div>
+                                <div class="suggestion-title">AI Agents</div>
+                                <div class="suggestion-desc">Discover recent artificial intelligence Agents articles</div>
                             </div>
                             <div class="suggestion-card" onclick="sendSuggestion('What are the database statistics?')">
                                 <div class="suggestion-title">Database Overview</div>
@@ -728,7 +738,7 @@
          line-height: 1.5; height: auto; box-sizing: border-box; vertical-align: middle;"
                                 onkeydown="handleKeyDown(event)" oninput="autoResize(this)"></textarea>
                             <button class="send-btn" id="sendBtn" onclick="sendMessage()" title="Send message">
-                                <span>⬆️</span>
+                                <i class="fa-solid fa-circle-up" style="color: black;"></i>
                             </button>
                         </div>
                     </div>
@@ -1086,10 +1096,7 @@
             window.addEventListener('resize', handleResize);
         });
 
-    
-
     </script>
-
 
 </body>
 
