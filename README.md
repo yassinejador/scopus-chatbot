@@ -1,12 +1,12 @@
 # Scopus Chatbot
 ![Version](https://img.shields.io/badge/version-0.1.0-blue)
 ![Status](https://img.shields.io/badge/status-in--development-yellow)
-[![CI Status](https://img.shields.io/github/actions/workflow/status/yassinejador/scopus-chatbot/python-ci.yml?branch=main&label=CI&style=flat-square)](https://github.com/yassinejador/scopus-chatbot/actions)
+[![tests](https://github.com/yassinejador/scopus-chatbot/actions/workflows/python-ci.yml/badge.svg)](https://github.com/yassinejador/scopus-chatbot/actions/workflows/python-ci.yml)
 
 
 ## Project Overview
 
-The Scopus Chatbot is an intelligent conversational agent designed to provide users with information extracted from the Scopus database. It allows users to query research papers, authors, and other academic data through a natural language interface. The chatbot leverages advanced techniques in natural language processing (NLP), semantic indexing, and data management to deliver accurate and relevant responses.
+The Scopus Chatbot is an intelligent conversational agent designed to provide users with information extracted from the arXiv database. It allows users to query research papers, authors, and other academic data through a natural language interface. The chatbot leverages advanced techniques in natural language processing (NLP), semantic indexing, and data management to deliver accurate and relevant responses. While the application was initially named 'Scopus Chatbot' and its database schema is based on Scopus result columns, the underlying data source has transitioned from the Scopus API to the arXiv API. This means that all research data retrieved and processed by the application now originates from arXiv. The system internally converts arXiv data fields to fit the existing Scopus-based database relationships and structure, ensuring seamless operation without requiring changes to the application's core logic or user interaction methods.
 
 ## Table of Contents
 
@@ -34,14 +34,12 @@ The Scopus Chatbot is an intelligent conversational agent designed to provide us
     *   [Test Location](#test-location)
     *   [Running Tests Locally](#running-tests-locally)
     *   [Running Tests with GitHub Actions (CI/CD)](#running-tests-with-github-actions-cicd)
-*   [Contributing](#contributing)
+*   [User Guide](#user-guide)
 *   [License](#license)
-*   [Contact](#contact)
-
 ## Features
 
 *   **Natural Language Understanding:** Process and interpret user queries in natural language.
-*   **Scopus Data Integration:** Connects to the Scopus API to retrieve up-to-date academic information.
+*   **arXiv Data Integration:** Connects to the arXiv API to retrieve up-to-date academic information, with internal conversion to fit the Scopus-based database schema.
 *   **Semantic Search:** Utilizes vector embeddings and FAISS indexing for efficient and relevant information retrieval.
 *   **Modular Architecture:** Designed with distinct components for easy maintenance and scalability.
 *   **Web Interface:** Provides a user-friendly web-based interface for interaction.
@@ -54,7 +52,7 @@ The project is organized into several key directories, each responsible for a sp
 scopus_chatbot/
 ├── chatbot_core/             # Core logic for query processing and response generation
 ├── data/                     # Stores database, vector index, and embeddings cache
-├── data_management/          # Handles Scopus API interaction, data cleaning, and database management
+├── data_management/          # Handles arXiv API interaction, data cleaning, and database management
 ├── semantic_indexing/        # Manages embedding generation and vector indexing
 ├── web_interface/            # Frontend web application (Flask)
 ├── config.py                 # Configuration settings
@@ -67,7 +65,7 @@ scopus_chatbot/
 
 ## Project Architecture Breakdown
 
-This section outlines the architecture and key components of the Scopus Chatbot project. The chatbot is designed to interact with users, process their queries, retrieve information from a Scopus database, and generate relevant responses. It leverages various modules for data management, natural language processing, and web interface.
+This section outlines the architecture and key components of the Scopus Chatbot project. The chatbot is designed to interact with users, process their queries, retrieve information from an arXiv database, and generate relevant responses. It leverages various modules for data management, natural language processing, and web interface.
 
 ### 1. High-Level Architecture
 
@@ -76,7 +74,7 @@ The Scopus Chatbot follows a modular architecture, separating concerns into dist
 *   **Web Interface:** Handles user interactions and displays chatbot responses.
 *   **Chatbot Core:** Processes user queries and generates responses.
 
-*   **Data Management:** Manages data retrieval, storage, and cleaning from Scopus.
+*   **Data Management:** Manages data retrieval, storage, and cleaning from arXiv.
 *   **Semantic Indexing:** Handles embedding generation and vector indexing for efficient search.
 
 ### 2. Component Breakdown
@@ -100,8 +98,8 @@ This module contains the core logic for processing user queries and generating a
 
 This module handles all aspects of data interaction, including fetching data from the Scopus API, cleaning it, and managing the local database.
 
-*   `scopus_api_client.py`: Interacts with the Scopus API to fetch raw data. It handles API requests, authentication, and rate limiting.
-*   `data_cleaner.py`: Processes raw data fetched from Scopus, cleaning and transforming it into a usable format for the chatbot.
+*   `scopus_api_client.py`: Interacts with the arXiv API to fetch raw data. It handles API requests, authentication, and rate limiting.
+*   `data_cleaner.py`: Processes raw data fetched from arXiv, cleaning and transforming it into a usable format for the chatbot.
 *   `database_manager.py`: Manages the local SQLite database (`scopus_data.db`) where cleaned Scopus data is stored. It handles operations like data insertion, retrieval, and updates.
 
 #### 2.4. Semantic Indexing (`semantic_indexing/`)
@@ -125,7 +123,6 @@ This module is crucial for enabling efficient and relevant search within the Sco
     *   `scopus_data.db`: SQLite database containing processed Scopus data.
     *   `vector_index.faiss`: FAISS index file for semantic search.
     *   `vector_index_metadata.pkl`: Metadata associated with the FAISS index.
-    *   `embeddings_cache/`: Directory for caching generated embeddings to avoid redundant computations.
 
 This detailed breakdown provides a clear understanding of the Scopus Chatbot's architecture, its individual components, and their respective roles in the overall system. This modular design facilitates development, testing, and future enhancements.
 
@@ -155,17 +152,18 @@ pip install -r requirements.txt
 
 ### 4. Configure Environment Variables
 
-Create a `.env` file in the root directory of the project based on `.env.example`. You will need to obtain a Scopus API key from Elsevier's Developer Portal.
+Create a `.env` file in the root directory of the project based on `.env.example`.
 
 ```
-SCOPUS_API_KEY=your_scopus_api_key_here
+# Arxiv Base URL
+ARXIV_BASE_URL=http://export.arxiv.org/api/query
 ```
 
 ### 5. Prepare Data (Initial Data Loading and Indexing)
 
 Before running the chatbot, you need to populate the database and build the semantic index. This typically involves:
 
-*   Fetching data from the Scopus API using scripts in `data_management/`.
+*   Fetching data from the Arxiv API using scripts in `data_management/`.
 *   Cleaning and storing data in `data/scopus_data.db`.
 *   Generating embeddings and building the FAISS index using scripts in `semantic_indexing/`.
 
@@ -173,12 +171,7 @@ Detailed instructions for data preparation will be provided in a separate `DATA_
 
 ### 6. Run the Chatbot
 
-Run and setup data (just for the first time)
-```bash
-python main.py --mode web --setup-data
-```
-
-If you already ran cmd with "--setup-data" then run
+Run and setup data(--setup-data runs automatically if the indices not exist)
 ```bash
 python main.py --mode web
 ```
@@ -253,7 +246,7 @@ jobs:
     
     strategy:
       matrix:
-        python-version: [3.11.2]
+        python-version: [3.8, 3.9, '3.10', 3.11, 3.12]
         
     steps:
     - uses: actions/checkout@v3
@@ -269,7 +262,7 @@ jobs:
         pip install -r requirements.txt
 
     - name: Run tests
-      run: pytest tests/
+      run: PYTHONPATH=. pytest
 ```
 
 This workflow will:
@@ -277,7 +270,7 @@ This workflow will:
 1.  **Trigger:** Run on every `push` and `pull_request` event.
 2.  **Environment:** Use the latest Ubuntu environment.
 3.  **Checkout Code:** Clone your repository.
-4.  **Set up Python:** Install Python 3.11.2.
+4.  **Set up Python:** Install Python 3.8, 3.9, 3.10, 3.1 or 3.12.
 5.  **Install Dependencies:** Install all packages listed in `requirements.txt`.
 
 ### Adding New Features
@@ -289,7 +282,6 @@ This workflow will:
 ## Troubleshooting
 
 **Common Issues:**
-- **API Key Error**: Ensure SCOPUS_API_KEY is set correctly
 - **Import Errors**: Check Python path and virtual environment
 - **Database Issues**: Delete `data/scopus_chatbot.db` to reset
 - **Port Conflicts**: Change FLASK_PORT in configuration
@@ -297,8 +289,59 @@ This workflow will:
 **Getting Help:**
 - Check logs in the console output
 - Verify all dependencies are installed
-- Ensure API key has proper permissions
 - Test with simple queries first
+
+## User Guide
+
+This section provides a comprehensive guide on how to use the Scopus Research Assistant application.
+
+### Main Interface
+
+Upon launching the application, you will be greeted by the main interface, which prompts you with "What's on your research mind today?" This is where you can begin your research by typing your query into the input field at the bottom of the screen.
+
+![Main Interface](./docs/Home-page.png)
+
+### Sidebar Actions
+
+The left sidebar provides quick access to various actions and settings:
+
+*   **ACTIONS:**
+    *   **Clear Chat:** Clears the current conversation, allowing you to start a new one.
+    *   **Help:** Displays a summary of what the chatbot can do and how to use it, along with tips for better results.
+
+    ![Help Section](./docs/help-page.png)
+
+    *   **Statistics:** Provides an overview of the database, including total articles, articles with abstracts, total authors, indexed documents, and index type.
+
+    ![System Statistics](./docs/System-statistics-overview.png)
+
+    *   **View History:** Allows you to review your past interactions.
+
+*   **QUICK ACTIONS:**
+    *   **Quantum Computing:** Discover recent quantum computing applications.
+    *   **Trending AI Topics:** Explore what's hot in artificial intelligence research.
+    *   **AI Agents:** Discover recent artificial intelligence agents articles.
+    *   **Database Overview:** Get insights into research database size and coverage.
+
+*   **SETTINGS:**
+    *   **Toggle Theme:** Switches between light and dark themes.
+
+### Performing a Search
+
+To search for academic papers or information, simply type your research question or topic into the input field at the bottom of the main interface and press Enter. The chatbot will process your query and display relevant results.
+
+![Search Results](./docs/example-prompt-result.png)
+
+**Example:** If you type "Find recent papers about machine learning in healthcare," the chatbot will return a list of relevant papers, including their authors, publication source (arXiv), and abstracts.
+
+### Tips for Better Results
+
+To get the most out of the Scopus Research Assistant, consider the following tips:
+
+*   **Be Specific:** Formulate your queries clearly and precisely.
+*   **Include Keywords:** Use relevant keywords and concepts related to your research topic.
+*   **Use Statistics:** Utilize the "Statistics" feature to understand the database coverage and tailor your searches accordingly.
+
 
 ## License
 
@@ -309,4 +352,4 @@ This project is developed for educational purposes as part of the Master Python 
 ## 📦 Version
 
 **Current Version:** `v0.1.0-alpha`  
-**Status:** 🚧 Development – This project is under active development. It may contain bugs and is not yet ready for production use.
+**Status:** 🚧 Development.
