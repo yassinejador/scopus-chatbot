@@ -55,6 +55,7 @@ scopus_chatbot/
 ├── data_management/          # Handles arXiv API interaction, data cleaning, and database management
 ├── semantic_indexing/        # Manages embedding generation and vector indexing
 ├── web_interface/            # Frontend web application (Flask)
+├── tests/                    # Unit tests (Pytest)
 ├── config.py                 # Configuration settings
 ├── main.py                   # Main application entry point
 ├── requirements.txt          # Python dependencies
