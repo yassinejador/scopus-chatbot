@@ -260,16 +260,28 @@ def internal_error(error):
 def visualisation():
     import plotly.graph_objs as go
     from flask import render_template
+    from data_management.database_manager import ArxivDatabaseManager
 
+    # Initialize the database manager
+    db_manager = ArxivDatabaseManager()
+
+    # Get database statistics
+    stats = db_manager.get_database_stats()
+
+    # Prepare data for the pie chart
     labels = ["Articles", "Abstracts", "Authors"]
-    values = [16, 16, 1]
+    values = [
+        stats.get('total_articles', 0),
+        stats.get('articles_with_abstracts', 0),
+        stats.get('total_authors', 0)
+    ]
 
     fig = go.Figure(data=[go.Pie(
         labels=labels,
         values=values,
         hole=0.4,  # rend le graphe en forme de donut
         marker=dict(colors=['#00b894', '#0984e3', '#6c5ce7']),
-        textinfo='label+percent',
+        textinfo='label',
     )])
 
     fig.update_layout(
